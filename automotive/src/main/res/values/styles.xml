@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="ReCheckTheme" parent="android:style/Theme.Material.NoActionBar">
-        <item name="android:colorAccent">#A4F5C9</item>
-        <item name="android:windowBackground">#10151B</item>
-        <item name="android:statusBarColor">#10151B</item>
-        <item name="android:navigationBarColor">#10151B</item>
+    <style name="ReCheckTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorAccent">#006E81</item>
+        <item name="android:windowBackground">#EDF2F5</item>
+        <item name="android:statusBarColor">#EDF2F5</item>
+        <item name="android:navigationBarColor">#10253B</item>
         <item name="android:fontFamily">sans-serif</item>
     </style>
 </resources>

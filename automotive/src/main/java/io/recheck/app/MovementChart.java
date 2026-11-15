@@ -9,8 +9,8 @@ import android.view.View;
 import java.util.Locale;
 
 final class MovementChart extends View {
-    private static final int MUTED = 0xffb3c3cb;
-    private static final int GRID = 0xff35424d;
+    private static final int MUTED = 0xff455c70;
+    private static final int GRID = 0xffd9e3e9;
 
     private final Observation observation;
     private final int color;

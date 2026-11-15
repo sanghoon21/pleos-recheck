@@ -19,6 +19,7 @@ import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.view.WindowManager;
@@ -40,7 +41,7 @@ public final class MainActivity extends Activity {
     private Dashboard dashboard;
     private boolean demo = true;
     private String screen = "home";
-    private String connection = "가상 시나리오 · 실제 차량과 연결되지 않음";
+    private String connection = "시연용 가상 위치값";
     private String condition = "주차 후 첫 조작";
     private boolean parked;
     private boolean vehicleReady;
@@ -134,7 +135,7 @@ public final class MainActivity extends Activity {
         demo = requestedDemo;
         screen = "home";
         load();
-        connection = demo ? "가상 시나리오 · 실제 차량과 연결되지 않음" : "Pleos Vehicle 서비스 확인 중";
+        connection = demo ? "시연용 가상 위치값" : "Pleos 차량에 연결하고 있습니다.";
         closedValue = null;
         position = null;
         if (!demo) connectLive();
@@ -170,7 +171,7 @@ public final class MainActivity extends Activity {
                     minimum = low;
                     maximum = high;
                     vehicleReady = true;
-                    connection = "Pleos Vehicle 2.3.2 · 운전석 창 위치 읽기 연결";
+                    connection = "Pleos Vehicle SDK · 운전석 창문 위치";
                     dashboard.refresh();
                 }
                 @Override public void onPosition(int value) {
@@ -360,7 +361,7 @@ public final class MainActivity extends Activity {
             if (!vehicleReady || position == null || demo) return;
             final int value = position;
             new AlertDialog.Builder(this).setTitle("창문이 실제로 완전히 닫혀 있나요?")
-                    .setMessage("방금 조회한 위치값은 " + value + "입니다. 눈으로 닫힘을 확인한 값만 기준으로 저장해 주세요.")
+                    .setMessage("창문이 완전히 닫혔다면 이 위치를 기준으로 저장해 주세요. 현재 위치값은 " + value + "입니다.")
                     .setPositiveButton("닫힘 확인", (dialog, which) -> {
                         if (safety != null && safety.refreshNow()) { closedValue = value; dashboard.refresh(); }
                     }).setNegativeButton("돌아가기", null).show();
@@ -368,9 +369,9 @@ public final class MainActivity extends Activity {
     }
 
     private void beginWithConfirmation(int stage) {
-        new AlertDialog.Builder(this).setTitle(demo ? "가상 관찰을 재생할까요?" : "정상 조작 한 번을 관찰합니다")
-                .setMessage(demo ? "이 시나리오는 가상 데이터입니다. 실제 차량 신호나 수리 결과가 아닙니다."
-                        : "운전석 창문 주변이 비어 있나요? 닫기 방향으로 평소와 같은 스위치를 한 번만 조작해 주세요. 열기나 중간 조작을 했다면 관찰을 취소해 주세요. 이번 조건은 ‘" + condition + "’입니다.")
+        new AlertDialog.Builder(this).setTitle(demo ? "시연을 시작할까요?" : "창문을 조작하기 전에 확인해 주세요")
+                .setMessage(demo ? "가상 위치값으로 창문이 움직이는 모습과 기록 과정을 보여드립니다."
+                        : "창문 주변이 비어 있는지 살펴봐 주세요. 관찰을 시작한 뒤 운전석 스위치를 닫는 방향으로 한 번 조작해 주세요. 이번 조건은 ‘" + condition + "’입니다.")
                 .setPositiveButton("관찰 시작", (dialog, which) -> startObservation(stage))
                 .setNegativeButton("돌아가기", null).show();
     }
@@ -381,7 +382,7 @@ public final class MainActivity extends Activity {
             Files.write(file.toPath(), reportText().getBytes(StandardCharsets.UTF_8));
             Uri uri = Uri.parse("content://io.recheck.app.reports/report.txt");
             Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain")
-                    .putExtra(Intent.EXTRA_SUBJECT, "같은 증상, 다시 확인 · 관찰 기록")
+                    .putExtra(Intent.EXTRA_SUBJECT, "ReCheck 운전석 창문 기록")
                     .putExtra(Intent.EXTRA_TEXT, reportText()).putExtra(Intent.EXTRA_STREAM, uri)
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             send.setClipData(ClipData.newUri(getContentResolver(), "관찰 기록", uri));
@@ -392,23 +393,23 @@ public final class MainActivity extends Activity {
     }
 
     private String reportText() {
-        StringBuilder text = new StringBuilder("같은 증상, 다시 확인\n운전석 창문 관찰 기록\n\n");
-        text.append(demo ? "출처: 시연용 모의 데이터. 실제 차량 관측이 아닙니다.\n" : "출처: Pleos Vehicle SDK가 제공한 창문 위치\n");
+        StringBuilder text = new StringBuilder("ReCheck\n운전석 창문 관찰 기록\n\n");
+        text.append(demo ? "신호 출처  시연용 가상 위치값\n" : "신호 출처  Pleos Vehicle SDK 창문 위치\n");
         SimpleDateFormat date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.KOREA);
         for (Observation observation : observations) {
             text.append("\n").append(observation.stage).append(" · ").append(date.format(new Date(observation.capturedAt)))
-                    .append("\n사용자 확인 조건: ").append(observation.conditions)
-                    .append("\n관찰 결과: ").append(observation.result())
-                    .append("\n수신 범위: ").append(observation.minimum).append("~").append(observation.maximum)
-                    .append(" / 차주가 닫힘을 확인한 기준값: ").append(observation.closedValue)
-                    .append("\n닫기 방향 한 번 조작 확인: ").append(observation.userConfirmed)
-                    .append(" / 관찰 중단: ").append(observation.interrupted).append("\n수신값 (앱 경과시간 ms:값): ");
+                    .append("\n조작 조건  ").append(observation.conditions)
+                    .append("\n관찰 결과  ").append(result(observation))
+                    .append("\n위치 범위  ").append(observation.minimum).append("~").append(observation.maximum)
+                    .append(" / 차주가 확인한 닫힘 기준값  ").append(observation.closedValue)
+                    .append("\n닫기 방향 한 번 조작  ").append(observation.userConfirmed ? "차주 확인" : "미입력")
+                    .append("\n기록 상태  ").append(observation.interrupted ? "중단" : "완료")
+                    .append("\n위치값  ").append(observation.points.size()).append("개 (앱 수신 경과시간 ms:값)\n");
             for (Observation.Point point : observation.points) text.append("[").append(point.elapsedMs).append(":").append(point.rawPosition).append("] ");
-            text.append("\n관찰점: ").append(observation.points.size()).append("개\n");
+            text.append("\n");
         }
-        text.append("\n시간축은 앱의 수신 기준입니다. 창문 조작자·스위치 입력·동작 원인은 직접 측정하지 않았습니다.\n")
-                .append("관측된 구간의 비교이며 수리 완료·고장 원인·안전성을 판정하지 않습니다.\n")
-                .append("이름, 차량번호, VIN, 위치, 음성은 이 기록에 포함하지 않습니다.\n");
+        text.append("\n각 위치값의 시간은 앱이 신호를 받은 시점입니다. ")
+                .append("정비 상담에서 창문이 움직인 구간과 조작 조건을 함께 살펴보는 자료입니다.\n");
         return text.toString();
     }
 
@@ -472,14 +473,18 @@ public final class MainActivity extends Activity {
                 .setNegativeButton("돌아가기", null).show();
     }
 
-    private static final int BACKGROUND = 0xff10151b;
-    private static final int SURFACE = 0xff181f26;
-    private static final int CONTROL = 0xff242e37;
-    private static final int STROKE = 0xff35424d;
-    private static final int TEXT = 0xfff1f6f7;
-    private static final int MUTED = 0xffb3c3cb;
-    private static final int MINT = 0xffa4f5c9;
-    private static final int AMBER = 0xffffcd91;
+    private static final int BACKGROUND = 0xffedf2f5;
+    private static final int SURFACE = 0xffffffff;
+    private static final int CONTROL = 0xfff1f5f8;
+    private static final int STROKE = 0xffd9e3e9;
+    private static final int TEXT = 0xff10253b;
+    private static final int MUTED = 0xff455c70;
+    private static final int ACCENT = 0xff006e81;
+    private static final int CYAN = 0xff62dcd4;
+    private static final int AMBER = 0xff87501d;
+    private static final int HERO_TEXT = 0xfff3fafc;
+    private static final int HERO_MUTED = 0xffbfd5e2;
+    private static final int HERO_EDGE = 0xff345871;
 
     private static String result(Observation observation) {
         if (observation == null) return "기록 없음";
@@ -490,7 +495,7 @@ public final class MainActivity extends Activity {
 
     private static int resultColor(Observation observation) {
         if (observation == null) return MUTED;
-        return observation.result().equals("닫힘 위치 관측") ? MINT : AMBER;
+        return observation.result().equals("닫힘 위치 관측") ? ACCENT : AMBER;
     }
 
     private final class Dashboard extends FrameLayout {
@@ -560,8 +565,9 @@ public final class MainActivity extends Activity {
             }
             header();
             boolean actionsFirst = stacked && ("home".equals(screen) || "record".equals(screen));
-            FrameLayout main = panel(48, actionsFirst ? 862 : 112, 944);
-            FrameLayout actions = panel(stacked ? 48 : 1016, stacked && !actionsFirst ? 862 : 112, stacked ? 904 : 536);
+            boolean illustrationScreen = "home".equals(screen) || "record".equals(screen);
+            FrameLayout main = panel(48, actionsFirst ? 862 : 112, 944, illustrationScreen);
+            FrameLayout actions = panel(stacked ? 48 : 1016, stacked && !actionsFirst ? 862 : 112, stacked ? 904 : 536, false);
             if (stacked) {
                 // Keep the diagram's layout units while reserving the right edge for scrolling.
                 LayoutParams bounds = (LayoutParams) main.getLayoutParams();
@@ -579,12 +585,24 @@ public final class MainActivity extends Activity {
 
         private void header() {
             int width = stacked ? 1000 : 1600;
+            View bar = new View(MainActivity.this);
+            bar.setBackgroundColor(SURFACE);
+            put(scene, bar, 0, 0, width, 88);
             divider(scene, 0, 87, width);
-            FrameLayout mark = new FrameLayout(MainActivity.this);
-            mark.setBackground(shape(MINT, 12, 0));
+            View mark = new View(MainActivity.this);
+            mark.setBackgroundResource(io.recheck.app.R.drawable.app_icon);
+            mark.setOutlineProvider(new android.view.ViewOutlineProvider() {
+                @Override public void getOutline(View view, android.graphics.Outline outline) {
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), px(10));
+                }
+            });
+            mark.setClipToOutline(true);
             put(scene, mark, 48, 20, 48, 48);
-            label(mark, "↗", 0, 0, 48, 46, 30, BACKGROUND, true).setGravity(Gravity.CENTER);
-            label(scene, "ReCheck", 112, 17, 252, 54, 32, TEXT, true);
+            ImageView wordmark = new ImageView(MainActivity.this);
+            wordmark.setImageResource(io.recheck.app.R.drawable.recheck_wordmark);
+            wordmark.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            wordmark.setContentDescription("ReCheck");
+            put(scene, wordmark, 104, 9, 209, 70);
             boolean inObservation = "record".equals(screen) || ("detail".equals(screen) && "record".equals(returnScreen));
             int navigationLeft = stacked ? 326 : 595;
             if (!inObservation) {
@@ -592,52 +610,54 @@ public final class MainActivity extends Activity {
                 nav("비교", navigationLeft + 120, screen.equals("compare") || screen.equals("report") || screen.equals("detail"), () -> show("compare"));
             }
             if (!demo && !stacked)
-                label(scene, parked ? "P   주차 확인" : "주차 확인 전", 1058, 17, 218, 54, 23, parked ? MINT : MUTED, true);
+                label(scene, parked ? "P   주차 확인" : "주차 확인 전", 1058, 17, 218, 54, 23, parked ? ACCENT : MUTED, true);
             Runnable sources = inObservation ? null : () -> new AlertDialog.Builder(MainActivity.this)
                     .setTitle("데이터 출처")
                     .setItems(new String[] { "시연용 모의 데이터", "Pleos 차량 데이터 읽기" }, (dialog, index) -> setMode(index == 0))
                     .show();
-            button(scene, demo ? "시연 모드" : "Pleos 차량", width - 258, 14, 210, 60, demo ? AMBER : MINT, CONTROL, sources);
+            button(scene, demo ? "시연 모드" : "Pleos 차량", width - 258, 14, 210, 60, demo ? AMBER : ACCENT,
+                    demo ? 0xfffcf2e5 : 0xffe5f5f6, sources);
         }
 
         private void nav(String title, int x, boolean current, Runnable task) {
-            button(scene, title, x, 12, 114, 64, current ? MINT : MUTED, BACKGROUND, task);
+            button(scene, title, x, 12, 114, 64, current ? ACCENT : MUTED, SURFACE, task);
             if (current) {
                 View bar = new View(MainActivity.this);
-                bar.setBackground(shape(MINT, 4, 0));
+                bar.setBackground(shape(ACCENT, 4, 0));
                 put(scene, bar, x + 29, 84, 56, 4);
             }
         }
 
         private void home(FrameLayout main, FrameLayout actions) {
-            label(main, "운전석 창문", 40, 35, 800, 86, 68, TEXT, true);
-            label(main, "닫다가 다시 내려오는 증상", 44, 127, 800, 45, 30, MUTED, false);
-            illustration(main, 174, 470);
-            label(main, demo ? "시연용 모의 데이터" : connection, 44, 650, 805, 52, 23, demo ? AMBER : MUTED, false);
+            label(main, "차량 증상 기록", 46, 33, 800, 35, 23, CYAN, true);
+            label(main, "운전석 창문", 42, 70, 800, 83, 62, HERO_TEXT, true);
+            label(main, "닫다가 다시 내려오는 증상을 남겨 보세요.", 46, 157, 818, 43, 27, HERO_MUTED, false);
+            illustration(main, 209, 425);
+            heroFooter(main, demo ? "시연용 가상 위치값" : connection);
 
             int next = nextStage();
             int width = contentWidth();
-            label(actions, "다음 기록", 38, 36, width, 40, 25, MINT, true);
-            label(actions, STAGES[next], 38, 84, width, 68, 53, TEXT, true);
-            divider(actions, 38, 190, width);
-            label(actions, "조작 조건", 38, 226, width, 42, 25, MUTED, false);
-            button(actions, condition + "   ⌄", 38, 278, width, 70, TEXT, CONTROL, MainActivity.this::selectConditions);
+            label(actions, "기록 순서", 38, 33, width, 40, 25, MUTED, true);
+            progress(actions, next);
+            label(actions, STAGES[next] + " 기록", 38, 194, width, 70, 44, TEXT, true);
+            label(actions, "조작 조건", 38, 282, width, 37, 24, MUTED, false);
+            button(actions, condition + "   ⌄", 38, 323, width, 64, TEXT, CONTROL, MainActivity.this::selectConditions);
             String guide;
             String callToAction = "기록 시작";
             Runnable action = () -> beginWithConfirmation(next);
             if (demo) {
-                guide = "가상 창문 움직임을 재생합니다.";
+                guide = "가상 위치값으로 창문이 움직이는 모습과 기록 과정을 볼 수 있습니다.";
             } else if (!parked || !vehicleReady) {
                 guide = vehicleReady ? "P에 주차하고 정차해 주세요." : connection;
                 action = null;
             } else if (closedValue == null) {
-                guide = "창문을 완전히 닫아 주세요.";
+                guide = "창문을 완전히 닫고 그 위치를 기준으로 저장해 주세요.";
                 callToAction = "닫힘 기준 확인";
                 action = MainActivity.this::calibrateClosedValue;
             } else {
-                guide = "P 주차 확인 · 닫힘 기준 준비됨";
+                guide = "기록을 시작하면 창문을 닫는 동안 위치 변화가 저장됩니다.";
             }
-            message(actions, guide, 404, 103);
+            message(actions, guide, 407, 102);
             if (loadFailed) action = null;
             primary(actions, callToAction, action);
             if (demo && !observations.isEmpty()) secondary(actions, "시연 기록 초기화", MainActivity.this::resetDemo);
@@ -645,21 +665,24 @@ public final class MainActivity extends Activity {
         }
 
         private void record(FrameLayout main, FrameLayout actions) {
-            label(main, recordingComplete ? "이번 관찰" : "운전석 창문", 40, 34, 800, 64, 49, TEXT, true);
-            label(main, STAGES[selectedStage] + "  ·  " + condition, 44, 103, 805, 45, 27, MUTED, false);
-            illustration(main, 160, 470);
-            received = label(main, "", 44, 641, 805, 49, 23, MUTED, false);
+            label(main, STAGES[selectedStage] + " 기록", 46, 34, 800, 35, 23, CYAN, true);
+            label(main, "운전석 창문", 42, 72, 800, 83, 62, HERO_TEXT, true);
+            label(main, condition, 46, 158, 805, 43, 27, HERO_MUTED, false);
+            illustration(main, 209, 425);
+            heroFooter(main, demo ? "시연용 가상 위치값" : "Pleos Vehicle SDK");
+            received = label(main, "", 555, 664, stacked ? 300 : 340, 35, 22, HERO_TEXT, true);
+            received.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
 
             int width = contentWidth();
             String state = recordingComplete ? "관찰 결과" : finalReadPending ? "종료 확인 중" : "●  기록 중";
-            label(actions, state, 38, 36, width, 40, 25, recordingComplete ? MUTED : MINT, true);
+            label(actions, state, 38, 36, width, 40, 25, recordingComplete ? MUTED : ACCENT, true);
             if (recordingComplete) {
                 label(actions, result(recording), 38, 86, width, 83, 51, resultColor(recording), true);
                 String outcome = recording == null ? "" : result(recording).equals("다시 내려옴")
-                        ? "창문이 닫히는 쪽으로 움직인 뒤 다시 열리는 쪽으로 움직였어요."
-                        : result(recording).equals("닫힘 확인") ? "이번 조작에서 닫힘 기준에 도달했어요."
-                        : result(recording).equals("관찰 불충분") ? "이번 움직임을 비교하기에 위치값이 충분하지 않아요."
-                        : "이번 조작에서 닫힘 기준을 확인하지 못했어요.";
+                        ? "창문이 위로 움직이다 다시 내려왔습니다. 움직임과 조작 조건을 함께 남길 수 있습니다."
+                        : result(recording).equals("닫힘 확인") ? "이번 조작에서 창문이 닫힘 기준에 도달했습니다."
+                        : result(recording).equals("관찰 불충분") ? "기록을 저장하면 중단된 구간과 받은 위치값을 볼 수 있습니다."
+                        : "창문이 닫힘 기준에 도달하기 전까지 위치가 기록됐습니다.";
                 label(actions, outcome, 38, 181, width, 115, 28, MUTED, false);
                 if (recording != null && !recording.points.isEmpty()) {
                     button(actions, "움직임 자세히  ›", 38, 339, width, 68, TEXT, CONTROL, () -> showDetail(recording));
@@ -667,8 +690,10 @@ public final class MainActivity extends Activity {
                 message(actions, "", 416, 92);
                 primary(actions, "기록 저장", MainActivity.this::persistObservation);
             } else {
-                label(actions, demo ? "가상 창문\n재생 중" : "창문을 닫아\n주세요", 38, 87, width, 158, 56, TEXT, true);
-                label(actions, demo ? "움직임이 끝나면 결과가 표시됩니다." : "순정 스위치로 한 번만 조작해 주세요.", 38, 272, width, 105, 29, MUTED, false);
+                label(actions, "위치 변화를\n관찰하고 있습니다.", 38, 86, width, 156, 43, TEXT, true);
+                label(actions, demo ? "창문 움직임을 재생한 뒤 결과가 표시됩니다."
+                        : "운전석 스위치를 닫는 방향으로 한 번 조작한 뒤 ‘기록 마치기’를 눌러 주세요.",
+                        38, 265, width, 133, 29, MUTED, false);
                 message(actions, "", 425, 84);
                 primary(actions, demo ? "재생 중" : finalReadPending ? "마무리 중" : "기록 마치기",
                         demo || finalReadPending ? null : MainActivity.this::finishObservation);
@@ -681,22 +706,27 @@ public final class MainActivity extends Activity {
             Observation recent = latest(2);
             boolean recurred = recent != null && recent.comparableTo(first)
                     && "다시 내려옴".equals(result(first)) && "다시 내려옴".equals(result(recent));
-            label(main, "기록 비교", 40, 34, 800, 74, 55, TEXT, true);
-            label(main, recurred ? "정비 전과 같은 움직임이 다시 보였어요." : "운전석 창문", 43, 114, 813, 54, 29,
-                    recurred ? AMBER : MUTED, false);
+            label(main, "운전석 창문", 44, 35, 800, 39, 25, ACCENT, true);
+            label(main, "기록 비교", 42, 79, 800, 84, 57, TEXT, true);
             stageRows(main, true);
-            label(main, recurred ? "조작 조건과 시작 위치가 비슷한 두 기록입니다." : "", 44, 644, 821, 44, 23, MUTED, false);
+            label(main, recurred ? "비슷한 조건에서 정비 전과 같은 움직임이 다시 나타났습니다."
+                    : "기록을 눌러 창문이 움직인 구간을 살펴보세요.",
+                    44, 640, 821, 58, 24, recurred ? AMBER : MUTED, false);
 
             int width = contentWidth();
             int next = nextStage();
-            label(actions, "다음 기록", 38, 36, width, 40, 25, MINT, true);
-            label(actions, STAGES[next], 38, 85, width, 68, 48, TEXT, true);
-            divider(actions, 38, 190, width);
-            label(actions, observations.isEmpty() ? "창문 움직임을 기록하면 여기에 결과가 표시됩니다."
-                    : "상담에 보여줄 기록을 한 화면에서 열 수 있어요.", 38, 223, width, 115, 30, MUTED, false);
-            if (!observations.isEmpty())
-                button(actions, "상담용 기록  ›", 38, 354, width, 72, TEXT, CONTROL, () -> show("report"));
-            primary(actions, "기록 화면으로", () -> show("home"));
+            label(actions, "정비 상담", 38, 37, width, 43, 25, ACCENT, true);
+            label(actions, observations.isEmpty() ? "첫 기록을 남겨 보세요" : "기록을 함께 보세요", 38, 88, width, 78, 43, TEXT, true);
+            divider(actions, 38, 192, width);
+            label(actions, observations.isEmpty() ? "창문이 움직인 구간과 조작 조건을 함께 기록할 수 있습니다."
+                    : "증상이 다시 나타난 시점과 앞서 남긴 조건을 정비 담당자에게 보여줄 수 있습니다.",
+                    38, 225, width, 146, 29, MUTED, false);
+            if (observations.isEmpty()) {
+                primary(actions, "기록 화면으로", () -> show("home"));
+            } else {
+                primary(actions, "상담용 기록", () -> show("report"));
+                secondary(actions, next == 2 && latest(2) != null ? "기록 더 남기기" : "기록 화면으로", () -> show("home"));
+            }
         }
 
         private void stageRows(FrameLayout main, boolean selectable) {
@@ -704,14 +734,22 @@ public final class MainActivity extends Activity {
                 Observation observation = latest(i);
                 int y = 202 + 135 * i;
                 FrameLayout row = new FrameLayout(MainActivity.this);
-                row.setBackground(shape(CONTROL, 18, 0));
+                row.setBackground(shape(CONTROL, 16, STROKE));
                 put(main, row, 40, y, stacked ? 824 : 864, 111);
-                label(row, STAGES[i], 28, 11, 345, 51, 33, TEXT, true);
-                label(row, observation == null ? "" : date.format(new Date(observation.capturedAt)), 30, 66, 370, 29, 21, MUTED, false);
-                label(row, result(observation), 388, 9, 324, 86, 34, resultColor(observation), true);
+                View marker = new View(MainActivity.this);
+                marker.setBackground(shape(observation == null ? STROKE : resultColor(observation), 7, 0));
+                put(row, marker, 23, 24, 8, 64);
+                label(row, STAGES[i], 47, observation == null ? 29 : 11, 301, 51, 32, TEXT, true);
+                if (observation != null)
+                    label(row, date.format(new Date(observation.capturedAt)), 49, 66, 310, 29, 21, MUTED, false);
+                int badgeColor = observation == null ? 0xffe4ebef
+                        : resultColor(observation) == ACCENT ? 0xffe0f2f2 : 0xfffdf0df;
+                TextView badge = label(row, result(observation), 393, 24, 321, 62, 30, resultColor(observation), true);
+                badge.setGravity(Gravity.CENTER);
+                badge.setBackground(shape(badgeColor, 14, 0));
                 if (selectable && observation != null) {
                     label(row, "›", stacked ? 744 : 789, 11, 46, 84, 46, MUTED, false);
-                    row.setForeground(new RippleDrawable(ColorStateList.valueOf(0x29ffffff), null, shape(Color.WHITE, 18, 0)));
+                    row.setForeground(new RippleDrawable(ColorStateList.valueOf(0x18006e81), null, shape(Color.WHITE, 16, 0)));
                     row.setContentDescription(STAGES[i] + " " + result(observation) + ", 움직임 자세히");
                     row.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
                     row.setOnClickListener(view -> showDetail(observation));
@@ -721,16 +759,18 @@ public final class MainActivity extends Activity {
         }
 
         private void report(FrameLayout main, FrameLayout actions) {
-            label(main, "상담용 기록", 40, 34, 800, 74, 55, TEXT, true);
-            label(main, demo ? "운전석 창문 · 시연용 모의 데이터" : "운전석 창문 · Pleos 차량 데이터", 43, 114, 813, 54, 28,
-                    demo ? AMBER : MINT, false);
+            label(main, demo ? "운전석 창문 · 시연용 가상 위치값" : "운전석 창문 · Pleos Vehicle SDK",
+                    44, 35, 813, 38, 25, demo ? AMBER : ACCENT, true);
+            label(main, "상담용 기록", 42, 79, 800, 84, 57, TEXT, true);
             stageRows(main, false);
-            label(main, "차량번호 · 위치 · 음성 미포함", 44, 645, 800, 44, 23, MUTED, false);
+            label(main, "정비 담당자에게 이 화면을 보여주세요.", 44, 642, 800, 52, 24, MUTED, false);
 
             int width = contentWidth();
-            label(actions, "기록 공유", 38, 37, width, 67, 49, TEXT, true);
-            divider(actions, 38, 151, width);
-            label(actions, "조작 조건과 위치값이 포함된 텍스트 파일을 공유합니다.", 38, 195, width, 121, 31, MUTED, false);
+            label(actions, "기록 공유", 38, 37, width, 43, 25, ACCENT, true);
+            label(actions, "파일로 보내기", 38, 88, width, 79, 47, TEXT, true);
+            divider(actions, 38, 190, width);
+            label(actions, "기록 시각과 조작 조건, 창문 위치값을 한 파일에 담아 보낼 수 있습니다.",
+                    38, 224, width, 134, 29, MUTED, false);
             primary(actions, "파일 공유", MainActivity.this::shareReport);
             secondary(actions, "비교로 돌아가기", () -> show("compare"));
         }
@@ -744,12 +784,12 @@ public final class MainActivity extends Activity {
             label(main, detail.stage + "  ·  " + result(detail), 44, 115, 799, 49, 29, resultColor(detail), false);
             put(main, new MovementChart(MainActivity.this, detail, resultColor(detail)), 42, 185, stacked ? 820 : 860, 479);
             int width = contentWidth();
-            label(actions, "관찰 조건", 38, 36, width, 42, 25, MINT, true);
+            label(actions, "관찰 조건", 38, 36, width, 42, 25, ACCENT, true);
             label(actions, detail.conditions, 38, 88, width, 76, 42, TEXT, true);
             divider(actions, 38, 191, width);
             label(actions, detail.points.size() + "개 위치값 수신", 38, 221, width, 62, 29, MUTED, false);
             if (!"record".equals(returnScreen) && !STAGES[0].equals(detail.stage)) {
-                label(actions, detail.comparableTo(latest(0)) ? "정비 전과 비슷한 조건" : "정비 전과 비교 조건 확인 필요",
+                label(actions, detail.comparableTo(latest(0)) ? "정비 전과 비슷한 조건에서 기록했습니다." : "두 기록의 조작 조건과 시작 위치를 살펴보세요.",
                         38, 308, width, 113, 28, MUTED, false);
             }
             primary(actions, "돌아가기", () -> show(returnScreen));
@@ -760,6 +800,27 @@ public final class MainActivity extends Activity {
             put(panel, window, 16, top, stacked ? 870 : 912, height);
         }
 
+        private void heroFooter(FrameLayout panel, String source) {
+            View line = new View(MainActivity.this);
+            line.setBackgroundColor(HERO_EDGE);
+            put(panel, line, 46, 645, stacked ? 805 : 848, 1);
+            label(panel, source, 46, 664, 500, 36, 22, HERO_MUTED, false);
+        }
+
+        private void progress(FrameLayout panel, int active) {
+            String[] stages = {"정비 전", "인수 시", "일상"};
+            int stepWidth = (contentWidth() - 22) / stages.length;
+            for (int i = 0; i < stages.length; i++) {
+                boolean completed = latest(i) != null;
+                int fill = completed ? 0xffe0f2f2 : i == active ? TEXT : CONTROL;
+                int color = completed ? ACCENT : i == active ? SURFACE : MUTED;
+                TextView step = label(panel, stages[i], 38 + i * (stepWidth + 11), 94, stepWidth, 61, 23, color, true);
+                step.setGravity(Gravity.CENTER);
+                step.setBackground(shape(fill, 13, i == active && !completed ? 0 : STROKE));
+                step.setContentDescription(stages[i] + (completed ? " 기록 있음" : i == active ? " 기록 예정" : " 기록 대기"));
+            }
+        }
+
         private int contentWidth() { return stacked ? 828 : 460; }
 
         private void message(FrameLayout panel, String guide, int top, int height) {
@@ -768,17 +829,23 @@ public final class MainActivity extends Activity {
         }
 
         private void primary(FrameLayout panel, String text, Runnable task) {
-            button(panel, text, 38, 534, contentWidth(), 86, task == null ? MUTED : BACKGROUND,
-                    task == null ? CONTROL : MINT, task);
+            button(panel, text, 38, 534, contentWidth(), 86, task == null ? MUTED : SURFACE,
+                    task == null ? CONTROL : TEXT, task);
         }
 
         private void secondary(FrameLayout panel, String text, Runnable task) {
             button(panel, text, 38, 638, contentWidth(), 64, MUTED, SURFACE, task);
         }
 
-        private FrameLayout panel(int left, int top, int width) {
+        private FrameLayout panel(int left, int top, int width, boolean hero) {
             FrameLayout panel = new FrameLayout(MainActivity.this);
-            panel.setBackground(shape(SURFACE, 32, STROKE));
+            GradientDrawable surface = shape(SURFACE, 24, STROKE);
+            if (hero) {
+                surface.setOrientation(GradientDrawable.Orientation.TL_BR);
+                surface.setColors(new int[]{0xff10253b, 0xff15384d, 0xff10253b});
+                surface.setStroke(Math.max(1, px(1)), HERO_EDGE);
+            }
+            panel.setBackground(surface);
             put(scene, panel, left, top, width, 734);
             return panel;
         }
@@ -800,14 +867,15 @@ public final class MainActivity extends Activity {
             TextView view = new TextView(MainActivity.this) {
                 @Override public CharSequence getAccessibilityClassName() { return "android.widget.Button"; }
             };
-            style(view, text, height >= 80 ? 33 : 26, color, true);
+            style(view, text, height >= 80 ? 31 : 26, color, true);
             view.setGravity(Gravity.CENTER);
             GradientDrawable background = shape(fill, 16, 0);
             if (task == null) {
                 view.setBackground(background);
                 view.setEnabled(false);
             } else {
-                view.setBackground(new RippleDrawable(ColorStateList.valueOf(0x2fffffff), background, null));
+                int ripple = fill == TEXT ? 0x30ffffff : 0x19006e81;
+                view.setBackground(new RippleDrawable(ColorStateList.valueOf(ripple), background, null));
                 view.setOnClickListener(clicked -> task.run());
                 view.setFocusable(true);
             }

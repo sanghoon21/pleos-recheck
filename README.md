@@ -1,10 +1,10 @@
-# 같은 증상, 다시 확인
+# ReCheck
 
-운전석 창문이 가끔 닫히다 다시 내려옵니다. 그런데 정비소에 가면 잘 닫힙니다. 며칠 뒤 같은 일이 생겼을 때, 어떻게 움직였는지 또 처음부터 설명해야 합니다.
+ReCheck는 가끔 나타나는 차량 이상을 차의 작동 데이터로 기록해 정비 상담에 가져갈 수 있게 돕는 Pleos 앱입니다. 정비를 받으러 갔을 때 증상이 사라졌다면, 입고 전에 저장한 기록을 열어 당시의 위치 변화와 조작 조건을 보여줄 수 있습니다. 인수하거나 일상에서 다시 확인한 결과도 같은 증상에 이어 붙입니다.
 
-ReCheck는 주차한 차에서 운전석 창문의 위치를 읽고, **정비 전 → 인수할 때 → 일상 재확인**을 한 건으로 이어서 보여주는 Pleos Connect 앱입니다. 다음에 정비사와 이야기할 때 이전 기록부터 바로 꺼낼 수 있습니다.
+이번 시제품에서는 운전석 창문을 예로 들었습니다. 주차 후 기록을 켜고 평소처럼 차량 스위치로 창문을 닫으면 앱이 위치값을 받습니다. 언제 어떤 움직임이 있었는지 확인하고 상담용 텍스트로 공유할 수 있습니다. 이후에는 해당 차종에서 읽을 수 있는 차량 신호를 확인해 문 잠금처럼 간헐적으로 이상이 생기는 다른 기능으로 적용 범위를 넓힐 계획입니다.
 
-[시연 영상](https://github.com/sanghoon21/pleos-recheck/releases/download/v0.3.0/same-symptom_demo_v3.mp4) · [APK와 소스](https://github.com/sanghoon21/pleos-recheck/releases/tag/v0.3.0) · [SDK 연동 검증 영상](https://github.com/sanghoon21/pleos-recheck/releases/download/v0.3.0/same-symptom_pleos-sdk-verification_v0.3.0.mp4)
+[시연 영상](https://github.com/sanghoon21/pleos-recheck/releases/download/v0.4.0/ReCheck_demo_v4.mp4) · [APK와 소스](https://github.com/sanghoon21/pleos-recheck/releases/tag/v0.4.0) · [SDK 연동 검증 영상](https://github.com/sanghoon21/pleos-recheck/releases/download/v0.4.0/ReCheck_pleos_sdk_v4.mp4)
 
 ![정비 전과 인수할 때, 일상 재확인에 남긴 운전석 창문 결과](verification/compare.png)
 
@@ -20,7 +20,7 @@ ReCheck는 주차한 차에서 운전석 창문의 위치를 읽고, **정비 �
 
 ## 바로 실행하기
 
-릴리스에서 `SSH_ReCheck_release.apk`를 받거나 소스의 [`apk/`](apk/) 폴더에서 `SSH_같은증상다시확인_release.apk`를 받습니다. Android SDK Platform Tools가 있는 PC에서 검토용 에뮬레이터에 설치합니다.
+릴리스 또는 소스의 [`apk/`](apk/) 폴더에서 `SSH_ReCheck_release.apk`를 내려받습니다. Android SDK Platform Tools가 있는 PC에서 검토용 에뮬레이터에 설치합니다.
 
 ```powershell
 adb devices
@@ -34,8 +34,8 @@ adb -s <기기번호> shell am start -n io.recheck.app/.MainActivity
 
 | 실행 환경 | 버전과 화면 | 확인 내용 |
 |---|---|---|
-| 일반 Android 에뮬레이터 | Android 15 / API 35, 1600×900 | 세 시점 기록·비교·상담용 텍스트 공유 선택창과 앱 재실행 후 복원을 확인했습니다. |
-| 공식 Pleos Connect 에뮬레이터 | 2.1.0 / API 34, 2560×1440, Vehicle SDK 2.3.2 | 운전석 창문 현재 위치 조회, 가상 차량 신호로 세 관찰의 신규 저장·비교와 앱 재실행 후 복원을 확인했습니다. |
+| 일반 Android 에뮬레이터 | Android 15 / API 35, 1600×900 | 정비 전·인수 시·일상 재확인 기록을 남겼습니다. 비교, 세부 기록과 공유 선택창을 열고 재실행 뒤 기록을 복원했습니다. |
+| 공식 Pleos Connect 에뮬레이터 | 2.1.0 / API 34, 2560×1440, Vehicle SDK 2.3.2 | Virtual Console이 보낸 가상 창문 위치를 SDK로 받아 세 번 저장했습니다. 화면에서 비교한 뒤 앱을 다시 열어 기록을 확인했습니다. |
 
 SDK 시험에는 Virtual Console의 가상 차량 신호를 사용했습니다. 실제 차량에서의 신호 지원과 정비 과정에서의 시간·비용 절감은 후속 검증 항목입니다. 기록은 기기에 저장되며 모의 데이터와 SDK 수신 데이터는 별도 파일에 보관합니다. 사용자가 공유 앱을 고르면 해당 앱에 텍스트 파일을 전달합니다.
 

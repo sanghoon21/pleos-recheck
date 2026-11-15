@@ -2,7 +2,7 @@
 
 | 항목 | 실행 환경 |
 |---|---|
-| APK | ReCheck 0.3.0, versionCode 3, `io.recheck.app` |
+| APK | ReCheck 0.4.0, versionCode 4, `io.recheck.app` |
 | 일반 Android | Android 15 / API 35, 1600×900 |
 | Pleos | 공식 Pleos Connect 2.1.0 / API 34, 전체 화면 2560×1440 |
 | SDK | `ai.pleos.playground:Vehicle:2.3.2` |
@@ -36,11 +36,11 @@
 
 SDK가 콜백으로 보낸 값을 기록 도중 수신합니다. 시작과 종료 때도 현재 위치를 조회하므로, 화면에 표시된 수신점 수에는 끝점 조회가 포함됩니다. 실제 차종에서의 신호 지원과 연동 품질은 이후 검증할 항목입니다.
 
-[SDK 연동 검증 영상](https://github.com/sanghoon21/pleos-recheck/releases/download/v0.3.0/same-symptom_pleos-sdk-verification_v0.3.0.mp4) · [시험 환경과 실측값 JSON](../verification/pleos/verification.json)
+[SDK 연동 검증 영상](https://github.com/sanghoon21/pleos-recheck/releases/download/v0.4.0/ReCheck_pleos_sdk_v4.mp4) · [시험 환경과 실측값 JSON](../verification/pleos/verification.json)
 
 ## 자동 검사
 
-v0.3.0 서명 APK를 빌드하고 단위 검사 3건을 확인했습니다. Android 저장·출처 분리 검사 1건도 통과했습니다.
+v0.4.0 서명 APK를 빌드하고 단위 검사 3건을 확인했습니다. Android 저장·출처 분리 검사 1건도 통과했습니다.
 
 `ObservationTest`는 기록 결과 분류, 비교 조건, 유효값·시각 순서를 검사합니다. `SessionPersistenceTest`는 로컬 저장의 재읽기와 모의 데이터·SDK 수신 데이터의 분리를 검사합니다. 재현 명령은 [개발 환경과 빌드](DEVELOPMENT.md)에 있습니다.
 
@@ -48,5 +48,5 @@ v0.3.0 서명 APK를 빌드하고 단위 검사 3건을 확인했습니다. Andr
 
 ```text
 SHA-256
-c80c15e6b29ba93f600c029f83d33b92aab3a725c4c4592c54a1d17f69b861ed
+74c590c2144883c47fc001d173c6328ca48e73f4126a9c606355e1557842d9aa
 ```
