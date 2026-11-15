@@ -10,7 +10,7 @@
         android:label="같은 증상, 다시 확인"
         android:icon="@drawable/app_icon"
         android:appCategory="productivity"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:theme="@style/ReCheckTheme"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false">
         <uses-library android:name="android.car" android:required="false" />

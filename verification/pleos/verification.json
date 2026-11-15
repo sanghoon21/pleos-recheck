@@ -1,0 +1,88 @@
+{
+  "test_date_host": "2026-11-15 KST",
+  "app": {
+    "application_id": "io.recheck.app",
+    "version_name": "0.3.0",
+    "version_code": 3,
+    "release_apk_sha256": "c80c15e6b29ba93f600c029f83d33b92aab3a725c4c4592c54a1d17f69b861ed",
+    "signature_scheme": "APK Signature Scheme v2",
+    "vehicle_sdk_version": "2.3.2",
+    "fresh_test_app_data": true
+  },
+  "environment": {
+    "image": "Official Pleos Connect 2.1.0 x86_64",
+    "build_fingerprint": "Pleos/crp_avd/crp_avd_x86_64:14/RELEASE.release_connect_v2.1.0/release_connect_v2.1.0:user/test-keys",
+    "android_version": "14",
+    "api_level": 34,
+    "emulator_display_pixels": [2560, 1440],
+    "host_android_emulator_version": "37.2.13.0",
+    "host_platform_tools_version": "37.0.1"
+  },
+  "signal_origin": {
+    "source": "Pleos Virtual Console simulated vehicle signal",
+    "transport": "HTTP endpoint used by the official Virtual Console interface, DDS bridge ready",
+    "observed_area": "Front left (ROW_1_LEFT)",
+    "physical_vehicle": false
+  },
+  "parked_current_position": {
+    "gear": "P",
+    "virtual_speed_kph": 0,
+    "sdk_current_position": 0,
+    "screenshot": "sdk-current-value.png"
+  },
+  "new_observations": [
+    {
+      "stage": "정비 전",
+      "console_positions": [78, 60, 29, 8, 25, 41],
+      "sdk_received_count": 7,
+      "console_position_at_finish": 41,
+      "result": "다시 내려옴",
+      "screenshot": "movement-before.png"
+    },
+    {
+      "stage": "인수할 때",
+      "console_positions": [78, 56, 26, 0],
+      "sdk_received_count": 5,
+      "console_position_at_finish": 0,
+      "result": "닫힘 확인",
+      "screenshot": "observation-pickup.png"
+    },
+    {
+      "stage": "일상 재확인",
+      "console_positions": [77, 58, 27, 9, 23, 39],
+      "sdk_received_count": 7,
+      "console_position_at_finish": 39,
+      "result": "다시 내려옴",
+      "screenshot": "observation-repeat.png"
+    }
+  ],
+  "record_comparison": {
+    "condition": "주차 후 첫 조작",
+    "same_movement_message": "정비 전과 같은 움직임이 다시 보였어요.",
+    "fresh_screenshot": "compare-fresh.png",
+    "reopen_screenshot": "compare-reopened.png",
+    "force_stopped_and_launched_without_extras": true,
+    "vehicle_mode_reselected_after_launch": true,
+    "restored_counts_verified_in_detail_views": [7, 5, 7]
+  },
+  "driving_interruption": {
+    "gear_change": ["P", "D", "P"],
+    "virtual_speed_kph": 0,
+    "platform_driving_message": "주행 중에는 사용할 수 없습니다.",
+    "platform_screenshot": "driving-platform-restriction.png",
+    "app_result_after_return_to_park": "관찰 불충분",
+    "received_count": 1,
+    "app_screenshot": "returned-park-interrupted.png",
+    "interrupted_attempt_discarded": true
+  },
+  "verification_video": {
+    "filename": "same-symptom_pleos-sdk-verification_v0.3.0.mp4",
+    "duration_seconds": 36,
+    "resolution_pixels": [1920, 1080],
+    "frame_rate_fps": 30,
+    "codec": "H.264",
+    "audio_stream": false,
+    "sha256": "d8022dd02191c253868616e80b469c55ab4ebaab15e02eb3d3af4cd19482f2c7",
+    "verified": "Full decode and visual review of 11 frames across all scenes"
+  }
+}

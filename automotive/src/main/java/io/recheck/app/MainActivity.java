@@ -6,20 +6,21 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.RectF;
+import android.graphics.Typeface;
+import android.content.res.ColorStateList;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.view.MotionEvent;
+import android.view.Gravity;
 import android.view.View;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
+import android.widget.FrameLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.view.WindowManager;
 import android.widget.Toast;
 import java.io.File;
@@ -101,7 +102,7 @@ public final class MainActivity extends Activity {
         if ("unsupported".equals(screen)) {
             setMode(false);
         }
-        dashboard.invalidate();
+        dashboard.refresh();
     }
 
     private void load() {
@@ -118,7 +119,7 @@ public final class MainActivity extends Activity {
             return true;
         } catch (Exception exception) {
             error = "저장하지 못했습니다. 기록을 유지한 채 다시 시도해 주세요.";
-            dashboard.invalidate();
+            dashboard.refresh();
             return false;
         }
     }
@@ -137,7 +138,7 @@ public final class MainActivity extends Activity {
         closedValue = null;
         position = null;
         if (!demo) connectLive();
-        dashboard.invalidate();
+        dashboard.refresh();
     }
 
     private void connectLive() {
@@ -162,7 +163,7 @@ public final class MainActivity extends Activity {
                     recordingComplete = true;
                     error = reason;
                 }
-                dashboard.invalidate();
+                dashboard.refresh();
             }));
             reader = new VehicleReader(this, new VehicleReader.Listener() {
                 @Override public void onReady(int low, int high) {
@@ -170,7 +171,7 @@ public final class MainActivity extends Activity {
                     maximum = high;
                     vehicleReady = true;
                     connection = "Pleos Vehicle 2.3.2 · 운전석 창 위치 읽기 연결";
-                    dashboard.invalidate();
+                    dashboard.refresh();
                 }
                 @Override public void onPosition(int value) {
                     position = value;
@@ -181,7 +182,7 @@ public final class MainActivity extends Activity {
                             recording.points.set(recording.points.size() - 1, new Observation.Point(elapsed, value));
                         else recording.points.add(new Observation.Point(elapsed, value));
                     }
-                    dashboard.invalidate();
+                    dashboard.refresh();
                 }
                 @Override public void onError(String message) {
                     error = message;
@@ -190,7 +191,7 @@ public final class MainActivity extends Activity {
                         recording.interrupted = true;
                         recordingComplete = true;
                     }
-                    dashboard.invalidate();
+                    dashboard.refresh();
                 }
             });
             reader.connect();
@@ -205,7 +206,7 @@ public final class MainActivity extends Activity {
             for (int result : results) {
                 if (result != PackageManager.PERMISSION_GRANTED) {
                     connection = "주차 상태 확인에 필요한 차량 읽기 권한이 없습니다.";
-                    dashboard.invalidate();
+                    dashboard.refresh();
                     return;
                 }
             }
@@ -236,7 +237,7 @@ public final class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         if (!demo && reader == null) connectLive();
-        if (dashboard != null) dashboard.invalidate();
+        if (dashboard != null) dashboard.refresh();
     }
 
     private Observation example(int stage, boolean interrupted) {
@@ -259,11 +260,11 @@ public final class MainActivity extends Activity {
     }
 
     private void startObservation(int stage) {
-        if (loadFailed) { dashboard.invalidate(); return; }
+        if (loadFailed) { dashboard.refresh(); return; }
         if (!demo && safety != null) parked = safety.refreshNow();
         if (!demo && (!parked || !vehicleReady || closedValue == null)) {
             error = "연결·P 상태와 닫힌 위치 기준을 먼저 확인해 주세요.";
-            dashboard.invalidate();
+            dashboard.refresh();
             return;
         }
         selectedStage = stage;
@@ -291,13 +292,13 @@ public final class MainActivity extends Activity {
                     recording.points.add(fixture.points.get(index));
                     position = fixture.points.get(index).rawPosition;
                     if (index == fixture.points.size() - 1) recordingComplete = true;
-                    dashboard.invalidate();
+                    dashboard.refresh();
                 }, i * 500L);
             }
         } else {
             reader.read();
         }
-        dashboard.invalidate();
+        dashboard.refresh();
     }
 
     private void finishObservation() {
@@ -313,7 +314,7 @@ public final class MainActivity extends Activity {
                     finalReadPending = false;
                     recordingComplete = true;
                     if (recording.points.size() < 3) recording.interrupted = true;
-                    dashboard.invalidate();
+                    dashboard.refresh();
                 });
                 handler.postDelayed(() -> {
                     if (!finalReadPending) return;
@@ -322,15 +323,15 @@ public final class MainActivity extends Activity {
                     recording.interrupted = true;
                     recordingComplete = true;
                     error = "종료 시점의 현재값을 확인하지 못했습니다.";
-                    dashboard.invalidate();
+                    dashboard.refresh();
                 }, 2000);
             }
-            dashboard.invalidate();
+            dashboard.refresh();
             return;
         }
         recordingComplete = true;
         if (recording.points.size() < 3) recording.interrupted = true;
-        dashboard.invalidate();
+        dashboard.refresh();
     }
 
     private void persistObservation() {
@@ -340,19 +341,19 @@ public final class MainActivity extends Activity {
             recording = null;
             screen = "compare";
         } else observations.remove(observations.size() - 1);
-        dashboard.invalidate();
+        dashboard.refresh();
     }
 
     private void selectConditions() {
         String[] items = { "주차 후 첫 조작", "정비소에서 확인", "일상 중 조작" };
         new AlertDialog.Builder(this).setTitle("이번 조작 조건 · 사용자 확인")
-                .setItems(items, (dialog, which) -> { condition = items[which]; dashboard.invalidate(); }).show();
+                .setItems(items, (dialog, which) -> { condition = items[which]; dashboard.refresh(); }).show();
     }
 
     private void calibrateClosedValue() {
         if (!vehicleReady || safety == null || !safety.refreshNow() || reader == null) {
             error = "차량 연결·주차 신호와 현재값이 필요합니다.";
-            dashboard.invalidate();
+            dashboard.refresh();
             return;
         }
         reader.read(() -> {
@@ -361,7 +362,7 @@ public final class MainActivity extends Activity {
             new AlertDialog.Builder(this).setTitle("창문이 실제로 완전히 닫혀 있나요?")
                     .setMessage("방금 조회한 위치값은 " + value + "입니다. 눈으로 닫힘을 확인한 값만 기준으로 저장해 주세요.")
                     .setPositiveButton("닫힘 확인", (dialog, which) -> {
-                        if (safety != null && safety.refreshNow()) { closedValue = value; dashboard.invalidate(); }
+                        if (safety != null && safety.refreshNow()) { closedValue = value; dashboard.refresh(); }
                     }).setNegativeButton("돌아가기", null).show();
         });
     }
@@ -411,285 +412,433 @@ public final class MainActivity extends Activity {
         return text.toString();
     }
 
-    private final class Dashboard extends View {
-        private final Paint paint = new Paint(3);
-        private final List<Hit> hits = new ArrayList<>();
-        private final int navy = Color.rgb(15, 35, 52);
-        private final int teal = Color.rgb(0, 111, 111);
-        private final int muted = Color.rgb(93, 112, 125);
-        private final int amber = Color.rgb(172, 90, 19);
-        private float scale = 1;
-        private float offsetX;
-        private float offsetY;
 
-        Dashboard() { super(MainActivity.this); setContentDescription("같은 증상, 다시 확인. 차량 창문 관찰 앱"); }
+    private Observation detail;
+    private String returnScreen = "compare";
 
-        @Override protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            hits.clear();
-            boolean portrait = getWidth() < getHeight();
-            float width = portrait ? 900 : 1600;
-            float height = portrait ? 1440 : 900;
-            scale = Math.min(getWidth() / width, getHeight() / height);
-            offsetX = (getWidth() - width * scale) / 2;
-            offsetY = (getHeight() - height * scale) / 2;
-            canvas.drawColor(Color.rgb(238, 243, 246));
-            canvas.save();
-            canvas.translate(offsetX, offsetY);
-            canvas.scale(scale, scale);
-            if (portrait) {
-                canvas.scale(900f / 1600f, 900f / 1600f);
-                scale *= 900f / 1600f;
-            }
-            drawHeader(canvas);
-            if ("record".equals(screen)) drawRecord(canvas);
-            else if ("compare".equals(screen)) drawComparison(canvas);
-            else if ("report".equals(screen)) drawReport(canvas);
-            else drawHome(canvas);
-            drawFooter(canvas);
-            canvas.restore();
-        }
-
-        private void drawHeader(Canvas canvas) {
-            round(canvas, 0, 0, 1600, 116, 0, navy);
-            text(canvas, "ReCheck", 44, 48, 23, Color.rgb(116, 221, 211), true);
-            text(canvas, "같은 증상, 다시 확인", 44, 88, 32, Color.WHITE, true);
-            text(canvas, demo ? "가상 데이터로 사용 흐름을 체험합니다" : "차량 신호의 읽기 연결을 확인합니다", 720, 67, 24, Color.rgb(207, 220, 228), false);
-            button(canvas, 1260, 29, 1538, 87, demo ? "시연용 모의 데이터" : "Pleos 차량 읽기", demo ? Color.rgb(255, 225, 177) : Color.rgb(155, 226, 216), navy,
-                    () -> new AlertDialog.Builder(MainActivity.this).setTitle("데이터 출처 선택")
-                            .setItems(new String[] { "시연용 모의 데이터", "Pleos 차량 데이터 읽기" }, (dialog, index) -> setMode(index == 0)).show());
-        }
-
-        private void drawHome(Canvas canvas) {
-            text(canvas, "정비 후에도, 내 차의 평소 조건에서.", 56, 183, 43, navy, true);
-            text(canvas, "한 번의 관찰부터 이후 재발까지 같은 기록에 이어집니다.", 58, 231, 25, muted, false);
-            round(canvas, 55, 276, 1080, 739, 24, Color.WHITE);
-            text(canvas, "운전석 창문", 88, 327, 31, navy, true);
-            text(canvas, "올라간 뒤 다시 내려오는 움직임", 88, 369, 25, muted, false);
-            round(canvas, 841, 302, 1042, 353, 12, Color.rgb(231, 243, 240));
-            text(canvas, observations.size() + "개 관찰 저장", 861, 336, 23, teal, true);
-            float cardX = 86;
-            for (int i = 0; i < 3; i++) {
-                Observation observation = latest(i);
-                round(canvas, cardX, 409, cardX + 300, 605, 14, Color.rgb(245, 248, 250));
-                text(canvas, STAGES[i], cardX + 20, 447, 24, muted, true);
-                if (observation == null) {
-                    text(canvas, "관찰 전", cardX + 20, 515, 27, Color.rgb(124, 140, 151), true);
-                    line(canvas, cardX + 20, 550, cardX + 265, 550, Color.rgb(212, 222, 228), 3);
-                } else {
-                    text(canvas, compactResult(observation), cardX + 20, 489, 25, resultColor(observation), true);
-                    chart(canvas, observation, cardX + 22, 518, cardX + 270, 581, resultColor(observation), false);
-                }
-                cardX += 320;
-            }
-            int next = Math.min(2, observations.size());
-            button(canvas, 87, 644, 625, 708, observations.isEmpty() ? "첫 증상 기록하기" : STAGES[next] + " 관찰 이어가기", teal, Color.WHITE, () -> beginWithConfirmation(next));
-            button(canvas, 650, 644, 1042, 708, "기록 나란히 보기", Color.rgb(231, 239, 244), navy, () -> { screen = "compare"; invalidate(); });
-            round(canvas, 1110, 276, 1543, 739, 24, Color.rgb(222, 235, 238));
-            text(canvas, "평소처럼 한 번", 1140, 328, 29, navy, true);
-            text(canvas, "순정 스위치로 조작합니다.", 1140, 378, 24, navy, false);
-            text(canvas, "차량이 보고한 위치를", 1140, 416, 24, navy, false);
-            text(canvas, "앱이 읽어 기록합니다.", 1140, 454, 24, navy, false);
-            text(canvas, "이번 조건 · 사용자 확인", 1140, 524, 21, muted, true);
-            button(canvas, 1138, 545, 1514, 608, condition, Color.WHITE, navy, MainActivity.this::selectConditions);
-            if (demo) {
-                text(canvas, "실제 차량 신호가 아닙니다.", 1140, 654, 23, amber, true);
-                button(canvas, 1138, 674, 1514, 719, "시연 기록 초기화", Color.rgb(222, 235, 238), muted, () -> new AlertDialog.Builder(MainActivity.this)
-                        .setTitle("모의 기록을 초기화할까요?").setPositiveButton("초기화", (dialog, which) -> { observations.clear(); save(); invalidate(); }).setNegativeButton("돌아가기", null).show());
-            } else {
-                text(canvas, parked ? "P·정지 확인" : "주차 신호 확인 전", 1140, 647, 22, parked ? teal : amber, true);
-                button(canvas, 1138, 672, 1514, 720, closedValue == null ? "실제 닫힌 위치 기준 저장" : "닫힌 기준값 " + closedValue, Color.WHITE, navy, MainActivity.this::calibrateClosedValue);
-            }
-        }
-
-        private void drawRecord(Canvas canvas) {
-            text(canvas, recordingComplete ? "이번에 관측한 움직임" : "평소처럼 창문을 한 번 조작해 주세요", 56, 179, 41, navy, true);
-            text(canvas, STAGES[selectedStage] + "  ·  운전석 창문  ·  " + condition, 58, 224, 25, muted, false);
-            round(canvas, 55, 267, 1120, 731, 24, Color.WHITE);
-            String state = recordingComplete ? (recording == null ? "관찰 전" : recording.result()) : "위치 변화를 관찰하고 있습니다";
-            text(canvas, state, 93, 321, 31, recordingComplete && recording != null ? resultColor(recording) : teal, true);
-            text(canvas, demo ? "가상 시나리오 재생" : "수신 시점 기준 · 차량이 보고한 값", 94, 363, 23, muted, false);
-            if (recording != null && !recording.points.isEmpty()) chart(canvas, recording, 118, 402, 1048, 623, recording.interrupted ? amber : teal, true);
-            else text(canvas, "새로운 위치값을 기다립니다", 393, 502, 28, muted, false);
-            text(canvas, "관찰점 " + (recording == null ? 0 : recording.points.size()) + "개", 91, 688, 23, muted, true);
-            text(canvas, recordingComplete ? "이번 시도의 결과입니다." : "창문에 저항을 주거나 반복 조작하지 마세요.", 355, 688, 24, muted, false);
-            round(canvas, 1152, 267, 1543, 731, 24, Color.rgb(222, 235, 238));
-            text(canvas, "움직임을 보존합니다", 1180, 322, 28, navy, true);
-            text(canvas, "정비 전과 후의 기록을", 1180, 377, 23, navy, false);
-            text(canvas, "같은 축에서 비교하세요.", 1180, 416, 23, navy, false);
-            if (recordingComplete) button(canvas, 1180, 520, 1514, 589, "이번 관찰 저장", teal, Color.WHITE, MainActivity.this::persistObservation);
-            else button(canvas, 1180, 520, 1514, 589, "관찰 마치기", teal, Color.WHITE, MainActivity.this::finishObservation);
-            button(canvas, 1180, 613, 1514, 674, "관찰 취소", Color.WHITE, navy, () -> {
-                handler.removeCallbacksAndMessages(null);
-                recording = null;
-                screen = "home";
-                invalidate();
-            });
-            if (demo) button(canvas, 62, 757, 451, 810, "연결 끊김 예시 보기", Color.rgb(233, 225, 211), amber, () -> {
-                handler.removeCallbacksAndMessages(null);
-                if (recording == null) recording = example(selectedStage, true);
-                recording.interrupted = true;
-                recordingComplete = true;
-                error = "이번 관찰은 불완전합니다. 정상 결과로 집계되지 않습니다.";
-                invalidate();
-            });
-        }
-
-        private void drawComparison(Canvas canvas) {
-            text(canvas, "같은 창문. 세 번의 관찰.", 56, 180, 43, navy, true);
-            text(canvas, "정비 전·인수할 때·일상의 움직임을 같은 기록에서 확인합니다.", 58, 228, 25, muted, false);
-            for (int i = 0; i < 3; i++) {
-                float x = 55 + i * 503;
-                Observation observation = latest(i);
-                round(canvas, x, 270, x + 478, 658, 24, Color.WHITE);
-                text(canvas, STAGES[i], x + 28, 319, 27, muted, true);
-                text(canvas, observation == null ? "관찰 전" : compactResult(observation), x + 28, 369, 31, observation == null ? muted : resultColor(observation), true);
-                if (observation != null) {
-                    chart(canvas, observation, x + 50, 407, x + 424, 540, resultColor(observation), true);
-                    text(canvas, observation.points.size() + "개 수신값 · " + observation.conditions, x + 28, 591, 21, muted, false);
-                    Observation baseline = latest(0);
-                    String compare = i == 0 ? "비교 기준 기록" : observation.comparableTo(baseline) ? "조건 표기·시작 위치 유사" : "조건·데이터 확인 후 비교";
-                    text(canvas, compare, x + 28, 630, 22, i == 0 || observation.comparableTo(baseline) ? teal : amber, true);
-                } else {
-                    text(canvas, "평소처럼 한 번 조작한 뒤", x + 28, 446, 24, muted, false);
-                    text(canvas, "기록을 이어주세요.", x + 28, 484, 24, muted, false);
-                }
-            }
-            boolean recurrence = latest(0) != null && latest(2) != null
-                    && latest(0).result().contains("되돌아") && latest(2).result().contains("되돌아")
-                    && latest(2).comparableTo(latest(0));
-            text(canvas, recurrence ? "같은 움직임이 다시 보입니다. 이전 정비 건과 함께 보여주세요." : "관측한 시도만 남깁니다. 확인 전인 조건도 그대로 보입니다.", 62, 710, 27, navy, true);
-            button(canvas, 59, 750, 449, 814, "증상 카드로 돌아가기", Color.rgb(225, 235, 241), navy, () -> { screen = "home"; invalidate(); });
-            int next = Math.min(2, observations.size());
-            button(canvas, 479, 750, 1036, 814, observations.size() >= 3 ? "일상 재확인 한 번 더" : STAGES[next] + " 관찰 이어가기", teal, Color.WHITE, () -> beginWithConfirmation(next));
-            button(canvas, 1065, 750, 1542, 814, "담당자에게 보여줄 기록", navy, Color.WHITE, () -> { screen = "report"; invalidate(); });
-        }
-
-        private void drawReport(Canvas canvas) {
-            text(canvas, "이전 설명부터 다시 시작하지 않도록.", 56, 179, 42, navy, true);
-            text(canvas, "이 증상 기록의 공유 여부는 차주가 정합니다.", 58, 224, 25, muted, false);
-            round(canvas, 55, 266, 1028, 740, 24, Color.WHITE);
-            text(canvas, "운전석 창문 · 동일 증상 관찰", 88, 316, 29, navy, true);
-            text(canvas, demo ? "시연용 모의 데이터 / 실제 정비 사례 아님" : "Pleos Vehicle SDK / 앱 수신 기준", 88, 357, 24, demo ? amber : teal, true);
-            for (int i = 0; i < 3; i++) {
-                float y = 410 + i * 93;
-                Observation observation = latest(i);
-                text(canvas, STAGES[i], 91, y, 25, muted, true);
-                text(canvas, observation == null ? "관찰 전" : observation.result(), 327, y, 27, observation == null ? muted : resultColor(observation), true);
-                if (observation != null) text(canvas, observation.conditions + " · " + observation.points.size() + "개 값 수신", 328, y + 36, 21, muted, false);
-                line(canvas, 89, y + 56, 993, y + 56, Color.rgb(225, 233, 238), 2);
-            }
-            text(canvas, "차량번호·VIN·위치·음성 없이 보관", 90, 716, 23, teal, true);
-            round(canvas, 1061, 266, 1542, 740, 24, Color.rgb(222, 235, 238));
-            text(canvas, "이 기록으로 함께 확인해요", 1091, 322, 29, navy, true);
-            text(canvas, "어떤 때 움직임이 나타났는지", 1091, 381, 25, navy, false);
-            text(canvas, "정비 후 어떤 시도를 관찰했는지", 1091, 424, 25, navy, false);
-            text(canvas, "아직 확인하지 못한 조건은 뭔지", 1091, 467, 25, navy, false);
-            text(canvas, "수리 결과와 원인은", 1091, 550, 23, muted, false);
-            text(canvas, "담당자와 함께 확인해 주세요.", 1091, 588, 23, muted, false);
-            button(canvas, 1091, 642, 1512, 710, "공유할 앱 선택", teal, Color.WHITE, MainActivity.this::shareReport);
-            button(canvas, 59, 758, 533, 814, "세 관찰 다시 비교", navy, Color.WHITE, () -> { screen = "compare"; invalidate(); });
-            button(canvas, 565, 758, 1038, 814, "증상 카드로 돌아가기", Color.rgb(225, 235, 241), navy, () -> { screen = "home"; invalidate(); });
-        }
-
-        private void drawFooter(Canvas canvas) {
-            text(canvas, error.isEmpty() ? connection : error, 58, 859, 21, error.isEmpty() ? muted : amber, false);
-            text(canvas, "ReCheck  0.1  ·  관찰한 구간의 기록", 1184, 859, 20, muted, false);
-        }
-
-        private Observation latest(int stage) {
-            for (int i = observations.size() - 1; i >= 0; i--) if (observations.get(i).stage.equals(STAGES[stage])) return observations.get(i);
-            return null;
-        }
-
-        private int resultColor(Observation observation) {
-            return observation.result().contains("되돌아") || observation.interrupted ? amber : teal;
-        }
-
-        private String compactResult(Observation observation) {
-            if (observation.result().contains("되돌아")) return "다시 내려옴";
-            if (observation.result().contains("닫힘 위치")) return "이번에는 닫힘";
-            return observation.result();
-        }
-
-        private void chart(Canvas canvas, Observation observation, float left, float top, float right, float bottom, int color, boolean labels) {
-            for (int i = 0; i <= 2; i++) {
-                float y = top + (bottom - top) * i / 2;
-                line(canvas, left, y, right, y, Color.rgb(220, 230, 235), 2);
-            }
-            if (labels) {
-                text(canvas, "닫힘", left - 30, top - 13, 19, muted, false);
-                text(canvas, "시작", left - 15, bottom + 32, 19, muted, false);
-                text(canvas, "수신 순서", right - 95, bottom + 32, 19, muted, false);
-            }
-            if (observation.points.isEmpty()) return;
-            int count = Math.max(10, observation.points.size());
-            Path path = new Path();
-            for (int i = 0; i < observation.points.size(); i++) {
-                Observation.Point point = observation.points.get(i);
-                float x = left + (right - left) * i / (count - 1f);
-                float y = bottom - (bottom - top) * observation.height(point);
-                if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
-            }
-            paint.setColor(color);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(6);
-            paint.setStrokeJoin(Paint.Join.ROUND);
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            canvas.drawPath(path, paint);
-            paint.setStyle(Paint.Style.FILL);
-            Observation.Point last = observation.points.get(observation.points.size() - 1);
-            float x = left + (right - left) * (observation.points.size() - 1) / (count - 1f);
-            float y = bottom - (bottom - top) * observation.height(last);
-            canvas.drawCircle(x, y, 7, paint);
-        }
-
-        private void text(Canvas canvas, String value, float x, float y, float size, int color, boolean bold) {
-            paint.setStyle(Paint.Style.FILL);
-            paint.setColor(color);
-            paint.setTextSize(size);
-            paint.setTypeface(bold ? android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD) : android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL));
-            canvas.drawText(value, x, y, paint);
-        }
-
-        private void round(Canvas canvas, float left, float top, float right, float bottom, float radius, int color) {
-            paint.setColor(color);
-            paint.setStyle(Paint.Style.FILL);
-            canvas.drawRoundRect(left, top, right, bottom, radius, radius, paint);
-        }
-
-        private void line(Canvas canvas, float left, float top, float right, float bottom, int color, float width) {
-            paint.setColor(color);
-            paint.setStrokeWidth(width);
-            canvas.drawLine(left, top, right, bottom, paint);
-        }
-
-        private void button(Canvas canvas, float left, float top, float right, float bottom, String label, int background, int foreground, Runnable action) {
-            round(canvas, left, top, right, bottom, 13, background);
-            paint.setTextSize(25);
-            paint.setTypeface(android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.BOLD));
-            float textWidth = paint.measureText(label);
-            text(canvas, label, left + (right - left - textWidth) / 2, top + (bottom - top) / 2 + 9, 25, foreground, true);
-            hits.add(new Hit(new RectF(left, top, right, bottom), action));
-        }
-
-        @Override public boolean onTouchEvent(MotionEvent event) {
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                float x = (event.getX() - offsetX) / scale;
-                float y = (event.getY() - offsetY) / scale;
-                for (Hit hit : hits) {
-                    if (hit.bounds.contains(x, y)) { performClick(); hit.action.run(); return true; }
-                }
-            }
-            return true;
-        }
-
-        @Override public boolean performClick() { super.performClick(); return true; }
+    private void show(String nextScreen) {
+        screen = nextScreen;
+        dashboard.refresh();
     }
 
-    private static final class Hit {
-        final RectF bounds;
-        final Runnable action;
-        Hit(RectF bounds, Runnable action) { this.bounds = bounds; this.action = action; }
+    private void showDetail(Observation observation) {
+        detail = observation;
+        returnScreen = screen;
+        show("detail");
+    }
+
+    private void cancelObservation() {
+        handler.removeCallbacksAndMessages(null);
+        recording = null;
+        finalReadPending = false;
+        error = "";
+        show("home");
+    }
+
+    @Override public void onBackPressed() {
+        switch (screen) {
+            case "detail": show(returnScreen); break;
+            case "record":
+                new AlertDialog.Builder(this).setTitle("이번 기록을 취소할까요?")
+                        .setPositiveButton("취소하기", (dialog, which) -> cancelObservation())
+                        .setNegativeButton("계속 보기", null).show();
+                break;
+            case "report": show("compare"); break;
+            case "compare": show("home"); break;
+            default: super.onBackPressed();
+        }
+    }
+
+    private Observation latest(int stage) {
+        for (int i = observations.size() - 1; i >= 0; i--) {
+            if (STAGES[stage].equals(observations.get(i).stage)) return observations.get(i);
+        }
+        return null;
+    }
+
+    private int nextStage() {
+        for (int i = 0; i < STAGES.length; i++) if (latest(i) == null) return i;
+        return STAGES.length - 1;
+    }
+
+    private void resetDemo() {
+        new AlertDialog.Builder(this).setTitle("시연 기록을 초기화할까요?")
+                .setPositiveButton("초기화", (dialog, which) -> {
+                    List<Observation> previous = new ArrayList<>(observations);
+                    observations.clear();
+                    if (!save()) observations.addAll(previous);
+                    dashboard.refresh();
+                })
+                .setNegativeButton("돌아가기", null).show();
+    }
+
+    private static final int BACKGROUND = 0xff10151b;
+    private static final int SURFACE = 0xff181f26;
+    private static final int CONTROL = 0xff242e37;
+    private static final int STROKE = 0xff35424d;
+    private static final int TEXT = 0xfff1f6f7;
+    private static final int MUTED = 0xffb3c3cb;
+    private static final int MINT = 0xffa4f5c9;
+    private static final int AMBER = 0xffffcd91;
+
+    private static String result(Observation observation) {
+        if (observation == null) return "기록 없음";
+        if (observation.result().contains("되돌아")) return "다시 내려옴";
+        if (observation.result().equals("닫힘 위치 관측")) return "닫힘 확인";
+        return observation.result();
+    }
+
+    private static int resultColor(Observation observation) {
+        if (observation == null) return MUTED;
+        return observation.result().equals("닫힘 위치 관측") ? MINT : AMBER;
+    }
+
+    private final class Dashboard extends FrameLayout {
+        private final Typeface normal = Typeface.create("sans-serif", Typeface.NORMAL);
+        private final Typeface medium = Typeface.create("sans-serif-medium", Typeface.NORMAL);
+        private final SimpleDateFormat date = new SimpleDateFormat("M월 d일 HH:mm", Locale.KOREA);
+        private FrameLayout scene;
+        private WindowIllustration window;
+        private TextView received;
+        private float scale = 1f;
+        private boolean stacked;
+        private String displayedState = "";
+
+        Dashboard() {
+            super(MainActivity.this);
+            setBackgroundColor(BACKGROUND);
+        }
+
+        @Override protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
+            super.onSizeChanged(width, height, oldWidth, oldHeight);
+            displayedState = "";
+            post(this::refresh);
+        }
+
+        void refresh() {
+            if (getWidth() == 0 || getHeight() == 0) return;
+            String state = screen + "|" + demo + "|" + parked + "|" + vehicleReady + "|" + closedValue
+                    + "|" + connection + "|" + condition + "|" + observations.size() + "|" + error
+                    + "|" + (recording == null ? "" : recording.id) + "|" + recordingComplete
+                    + "|" + finalReadPending + "|" + loadFailed + "|" + (detail == null ? "" : detail.id);
+            if (!state.equals(displayedState)) {
+                displayedState = state;
+                render();
+            }
+            if (window != null) window.update(glassHeight(), "record".equals(screen) && !recordingComplete);
+            if (received != null && recording != null) {
+                String measurement = recording.points.size() + "개 위치값 수신";
+                if (!measurement.contentEquals(received.getText())) received.setText(measurement);
+            }
+        }
+
+        private float glassHeight() {
+            if ("record".equals(screen) && recording != null && !recording.points.isEmpty())
+                return recording.height(recording.points.get(recording.points.size() - 1));
+            if (!demo && position != null && closedValue != null && maximum > minimum)
+                return 1f - Math.min(1f, Math.abs((float) position - closedValue) / ((float) maximum - minimum));
+            return .38f;
+        }
+
+        private void render() {
+            removeAllViews();
+            window = null;
+            received = null;
+            stacked = getWidth() < getHeight() * 1.25f;
+            scale = stacked ? getWidth() / 1000f : Math.min(getWidth() / 1600f, getHeight() / 900f);
+            scene = new FrameLayout(MainActivity.this);
+            if (stacked) {
+                ScrollView scroll = new ScrollView(MainActivity.this);
+                scroll.setFillViewport(true);
+                scroll.setVerticalScrollBarEnabled(false);
+                addView(scroll, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                scroll.addView(scene, new ScrollView.LayoutParams(px(1000), px(1620)));
+                scene.setMinimumHeight(px(1620));
+            } else {
+                FrameLayout.LayoutParams bounds = new FrameLayout.LayoutParams(px(1600), px(900), Gravity.CENTER);
+                addView(scene, bounds);
+            }
+            header();
+            boolean actionsFirst = stacked && ("home".equals(screen) || "record".equals(screen));
+            FrameLayout main = panel(48, actionsFirst ? 862 : 112, 944);
+            FrameLayout actions = panel(stacked ? 48 : 1016, stacked && !actionsFirst ? 862 : 112, stacked ? 904 : 536);
+            if (stacked) {
+                // Keep the diagram's layout units while reserving the right edge for scrolling.
+                LayoutParams bounds = (LayoutParams) main.getLayoutParams();
+                bounds.width = px(904);
+                main.setLayoutParams(bounds);
+            }
+            switch (screen) {
+                case "record": record(main, actions); break;
+                case "compare": compare(main, actions); break;
+                case "report": report(main, actions); break;
+                case "detail": movement(main, actions); break;
+                default: home(main, actions); break;
+            }
+        }
+
+        private void header() {
+            int width = stacked ? 1000 : 1600;
+            divider(scene, 0, 87, width);
+            FrameLayout mark = new FrameLayout(MainActivity.this);
+            mark.setBackground(shape(MINT, 12, 0));
+            put(scene, mark, 48, 20, 48, 48);
+            label(mark, "↗", 0, 0, 48, 46, 30, BACKGROUND, true).setGravity(Gravity.CENTER);
+            label(scene, "ReCheck", 112, 17, 252, 54, 32, TEXT, true);
+            boolean inObservation = "record".equals(screen) || ("detail".equals(screen) && "record".equals(returnScreen));
+            int navigationLeft = stacked ? 326 : 595;
+            if (!inObservation) {
+                nav("기록", navigationLeft, screen.equals("home"), () -> show("home"));
+                nav("비교", navigationLeft + 120, screen.equals("compare") || screen.equals("report") || screen.equals("detail"), () -> show("compare"));
+            }
+            if (!demo && !stacked)
+                label(scene, parked ? "P   주차 확인" : "주차 확인 전", 1058, 17, 218, 54, 23, parked ? MINT : MUTED, true);
+            Runnable sources = inObservation ? null : () -> new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("데이터 출처")
+                    .setItems(new String[] { "시연용 모의 데이터", "Pleos 차량 데이터 읽기" }, (dialog, index) -> setMode(index == 0))
+                    .show();
+            button(scene, demo ? "시연 모드" : "Pleos 차량", width - 258, 14, 210, 60, demo ? AMBER : MINT, CONTROL, sources);
+        }
+
+        private void nav(String title, int x, boolean current, Runnable task) {
+            button(scene, title, x, 12, 114, 64, current ? MINT : MUTED, BACKGROUND, task);
+            if (current) {
+                View bar = new View(MainActivity.this);
+                bar.setBackground(shape(MINT, 4, 0));
+                put(scene, bar, x + 29, 84, 56, 4);
+            }
+        }
+
+        private void home(FrameLayout main, FrameLayout actions) {
+            label(main, "운전석 창문", 40, 35, 800, 86, 68, TEXT, true);
+            label(main, "닫다가 다시 내려오는 증상", 44, 127, 800, 45, 30, MUTED, false);
+            illustration(main, 174, 470);
+            label(main, demo ? "시연용 모의 데이터" : connection, 44, 650, 805, 52, 23, demo ? AMBER : MUTED, false);
+
+            int next = nextStage();
+            int width = contentWidth();
+            label(actions, "다음 기록", 38, 36, width, 40, 25, MINT, true);
+            label(actions, STAGES[next], 38, 84, width, 68, 53, TEXT, true);
+            divider(actions, 38, 190, width);
+            label(actions, "조작 조건", 38, 226, width, 42, 25, MUTED, false);
+            button(actions, condition + "   ⌄", 38, 278, width, 70, TEXT, CONTROL, MainActivity.this::selectConditions);
+            String guide;
+            String callToAction = "기록 시작";
+            Runnable action = () -> beginWithConfirmation(next);
+            if (demo) {
+                guide = "가상 창문 움직임을 재생합니다.";
+            } else if (!parked || !vehicleReady) {
+                guide = vehicleReady ? "P에 주차하고 정차해 주세요." : connection;
+                action = null;
+            } else if (closedValue == null) {
+                guide = "창문을 완전히 닫아 주세요.";
+                callToAction = "닫힘 기준 확인";
+                action = MainActivity.this::calibrateClosedValue;
+            } else {
+                guide = "P 주차 확인 · 닫힘 기준 준비됨";
+            }
+            message(actions, guide, 404, 103);
+            if (loadFailed) action = null;
+            primary(actions, callToAction, action);
+            if (demo && !observations.isEmpty()) secondary(actions, "시연 기록 초기화", MainActivity.this::resetDemo);
+            else if (!demo && closedValue != null) secondary(actions, "닫힘 기준 다시 확인", MainActivity.this::calibrateClosedValue);
+        }
+
+        private void record(FrameLayout main, FrameLayout actions) {
+            label(main, recordingComplete ? "이번 관찰" : "운전석 창문", 40, 34, 800, 64, 49, TEXT, true);
+            label(main, STAGES[selectedStage] + "  ·  " + condition, 44, 103, 805, 45, 27, MUTED, false);
+            illustration(main, 160, 470);
+            received = label(main, "", 44, 641, 805, 49, 23, MUTED, false);
+
+            int width = contentWidth();
+            String state = recordingComplete ? "관찰 결과" : finalReadPending ? "종료 확인 중" : "●  기록 중";
+            label(actions, state, 38, 36, width, 40, 25, recordingComplete ? MUTED : MINT, true);
+            if (recordingComplete) {
+                label(actions, result(recording), 38, 86, width, 83, 51, resultColor(recording), true);
+                String outcome = recording == null ? "" : result(recording).equals("다시 내려옴")
+                        ? "창문이 닫히는 쪽으로 움직인 뒤 다시 열리는 쪽으로 움직였어요."
+                        : result(recording).equals("닫힘 확인") ? "이번 조작에서 닫힘 기준에 도달했어요."
+                        : result(recording).equals("관찰 불충분") ? "이번 움직임을 비교하기에 위치값이 충분하지 않아요."
+                        : "이번 조작에서 닫힘 기준을 확인하지 못했어요.";
+                label(actions, outcome, 38, 181, width, 115, 28, MUTED, false);
+                if (recording != null && !recording.points.isEmpty()) {
+                    button(actions, "움직임 자세히  ›", 38, 339, width, 68, TEXT, CONTROL, () -> showDetail(recording));
+                }
+                message(actions, "", 416, 92);
+                primary(actions, "기록 저장", MainActivity.this::persistObservation);
+            } else {
+                label(actions, demo ? "가상 창문\n재생 중" : "창문을 닫아\n주세요", 38, 87, width, 158, 56, TEXT, true);
+                label(actions, demo ? "움직임이 끝나면 결과가 표시됩니다." : "순정 스위치로 한 번만 조작해 주세요.", 38, 272, width, 105, 29, MUTED, false);
+                message(actions, "", 425, 84);
+                primary(actions, demo ? "재생 중" : finalReadPending ? "마무리 중" : "기록 마치기",
+                        demo || finalReadPending ? null : MainActivity.this::finishObservation);
+            }
+            secondary(actions, "기록 취소", MainActivity.this::cancelObservation);
+        }
+
+        private void compare(FrameLayout main, FrameLayout actions) {
+            Observation first = latest(0);
+            Observation recent = latest(2);
+            boolean recurred = recent != null && recent.comparableTo(first)
+                    && "다시 내려옴".equals(result(first)) && "다시 내려옴".equals(result(recent));
+            label(main, "기록 비교", 40, 34, 800, 74, 55, TEXT, true);
+            label(main, recurred ? "정비 전과 같은 움직임이 다시 보였어요." : "운전석 창문", 43, 114, 813, 54, 29,
+                    recurred ? AMBER : MUTED, false);
+            stageRows(main, true);
+            label(main, recurred ? "조작 조건과 시작 위치가 비슷한 두 기록입니다." : "", 44, 644, 821, 44, 23, MUTED, false);
+
+            int width = contentWidth();
+            int next = nextStage();
+            label(actions, "다음 기록", 38, 36, width, 40, 25, MINT, true);
+            label(actions, STAGES[next], 38, 85, width, 68, 48, TEXT, true);
+            divider(actions, 38, 190, width);
+            label(actions, observations.isEmpty() ? "창문 움직임을 기록하면 여기에 결과가 표시됩니다."
+                    : "상담에 보여줄 기록을 한 화면에서 열 수 있어요.", 38, 223, width, 115, 30, MUTED, false);
+            if (!observations.isEmpty())
+                button(actions, "상담용 기록  ›", 38, 354, width, 72, TEXT, CONTROL, () -> show("report"));
+            primary(actions, "기록 화면으로", () -> show("home"));
+        }
+
+        private void stageRows(FrameLayout main, boolean selectable) {
+            for (int i = 0; i < STAGES.length; i++) {
+                Observation observation = latest(i);
+                int y = 202 + 135 * i;
+                FrameLayout row = new FrameLayout(MainActivity.this);
+                row.setBackground(shape(CONTROL, 18, 0));
+                put(main, row, 40, y, stacked ? 824 : 864, 111);
+                label(row, STAGES[i], 28, 11, 345, 51, 33, TEXT, true);
+                label(row, observation == null ? "" : date.format(new Date(observation.capturedAt)), 30, 66, 370, 29, 21, MUTED, false);
+                label(row, result(observation), 388, 9, 324, 86, 34, resultColor(observation), true);
+                if (selectable && observation != null) {
+                    label(row, "›", stacked ? 744 : 789, 11, 46, 84, 46, MUTED, false);
+                    row.setForeground(new RippleDrawable(ColorStateList.valueOf(0x29ffffff), null, shape(Color.WHITE, 18, 0)));
+                    row.setContentDescription(STAGES[i] + " " + result(observation) + ", 움직임 자세히");
+                    row.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+                    row.setOnClickListener(view -> showDetail(observation));
+                    row.setFocusable(true);
+                }
+            }
+        }
+
+        private void report(FrameLayout main, FrameLayout actions) {
+            label(main, "상담용 기록", 40, 34, 800, 74, 55, TEXT, true);
+            label(main, demo ? "운전석 창문 · 시연용 모의 데이터" : "운전석 창문 · Pleos 차량 데이터", 43, 114, 813, 54, 28,
+                    demo ? AMBER : MINT, false);
+            stageRows(main, false);
+            label(main, "차량번호 · 위치 · 음성 미포함", 44, 645, 800, 44, 23, MUTED, false);
+
+            int width = contentWidth();
+            label(actions, "기록 공유", 38, 37, width, 67, 49, TEXT, true);
+            divider(actions, 38, 151, width);
+            label(actions, "조작 조건과 위치값이 포함된 텍스트 파일을 공유합니다.", 38, 195, width, 121, 31, MUTED, false);
+            primary(actions, "파일 공유", MainActivity.this::shareReport);
+            secondary(actions, "비교로 돌아가기", () -> show("compare"));
+        }
+
+        private void movement(FrameLayout main, FrameLayout actions) {
+            if (detail == null) {
+                show("compare");
+                return;
+            }
+            label(main, "움직임 자세히", 40, 34, 800, 76, 55, TEXT, true);
+            label(main, detail.stage + "  ·  " + result(detail), 44, 115, 799, 49, 29, resultColor(detail), false);
+            put(main, new MovementChart(MainActivity.this, detail, resultColor(detail)), 42, 185, stacked ? 820 : 860, 479);
+            int width = contentWidth();
+            label(actions, "관찰 조건", 38, 36, width, 42, 25, MINT, true);
+            label(actions, detail.conditions, 38, 88, width, 76, 42, TEXT, true);
+            divider(actions, 38, 191, width);
+            label(actions, detail.points.size() + "개 위치값 수신", 38, 221, width, 62, 29, MUTED, false);
+            if (!"record".equals(returnScreen) && !STAGES[0].equals(detail.stage)) {
+                label(actions, detail.comparableTo(latest(0)) ? "정비 전과 비슷한 조건" : "정비 전과 비교 조건 확인 필요",
+                        38, 308, width, 113, 28, MUTED, false);
+            }
+            primary(actions, "돌아가기", () -> show(returnScreen));
+        }
+
+        private void illustration(FrameLayout panel, int top, int height) {
+            window = new WindowIllustration(MainActivity.this);
+            put(panel, window, 16, top, stacked ? 870 : 912, height);
+        }
+
+        private int contentWidth() { return stacked ? 828 : 460; }
+
+        private void message(FrameLayout panel, String guide, int top, int height) {
+            label(panel, error.isEmpty() ? guide : error, 38, top, contentWidth(), height, 27,
+                    error.isEmpty() ? MUTED : AMBER, false);
+        }
+
+        private void primary(FrameLayout panel, String text, Runnable task) {
+            button(panel, text, 38, 534, contentWidth(), 86, task == null ? MUTED : BACKGROUND,
+                    task == null ? CONTROL : MINT, task);
+        }
+
+        private void secondary(FrameLayout panel, String text, Runnable task) {
+            button(panel, text, 38, 638, contentWidth(), 64, MUTED, SURFACE, task);
+        }
+
+        private FrameLayout panel(int left, int top, int width) {
+            FrameLayout panel = new FrameLayout(MainActivity.this);
+            panel.setBackground(shape(SURFACE, 32, STROKE));
+            put(scene, panel, left, top, width, 734);
+            return panel;
+        }
+
+        private void divider(FrameLayout parent, int left, int top, int width) {
+            View line = new View(MainActivity.this);
+            line.setBackgroundColor(STROKE);
+            put(parent, line, left, top, width, 1);
+        }
+
+        private TextView label(FrameLayout parent, String text, int left, int top, int width, int height, int size, int color, boolean bold) {
+            TextView view = new TextView(MainActivity.this);
+            style(view, text, size, color, bold);
+            put(parent, view, left, top, width, height);
+            return view;
+        }
+
+        private TextView button(FrameLayout parent, String text, int left, int top, int width, int height, int color, int fill, Runnable task) {
+            TextView view = new TextView(MainActivity.this) {
+                @Override public CharSequence getAccessibilityClassName() { return "android.widget.Button"; }
+            };
+            style(view, text, height >= 80 ? 33 : 26, color, true);
+            view.setGravity(Gravity.CENTER);
+            GradientDrawable background = shape(fill, 16, 0);
+            if (task == null) {
+                view.setBackground(background);
+                view.setEnabled(false);
+            } else {
+                view.setBackground(new RippleDrawable(ColorStateList.valueOf(0x2fffffff), background, null));
+                view.setOnClickListener(clicked -> task.run());
+                view.setFocusable(true);
+            }
+            put(parent, view, left, top, width, height);
+            return view;
+        }
+
+        private void style(TextView view, String text, int size, int color, boolean bold) {
+            view.setIncludeFontPadding(false);
+            view.setGravity(Gravity.CENTER_VERTICAL);
+            view.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, px(size));
+            view.setTextColor(color);
+            view.setTypeface(bold ? medium : normal);
+            view.setText(text);
+        }
+
+        private GradientDrawable shape(int fill, int radius, int stroke) {
+            GradientDrawable shape = new GradientDrawable();
+            shape.setCornerRadius(px(radius));
+            shape.setColor(fill);
+            if (stroke != 0) shape.setStroke(Math.max(1, px(1)), stroke);
+            return shape;
+        }
+
+        private void put(FrameLayout parent, View view, int left, int top, int width, int height) {
+            FrameLayout.LayoutParams bounds = new FrameLayout.LayoutParams(px(width), px(height));
+            bounds.leftMargin = px(left);
+            bounds.topMargin = px(top);
+            parent.addView(view, bounds);
+        }
+
+        private int px(float units) { return Math.round(units * scale); }
     }
 }
