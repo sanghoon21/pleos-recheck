@@ -1,0 +1,17 @@
+{
+  "record1_dialog": 1.0,
+  "record1_start": 2.5,
+  "record1_complete": 8.19,
+  "compare1": 10.95,
+  "record2_start": 12.44,
+  "compare2": 20.05,
+  "record3_start": 22.53,
+  "record3_complete": 28.22,
+  "compare3": 31.14,
+  "report": 33.07,
+  "share": 35.53,
+  "force_stop": 36.27,
+  "reopened_without_seed_extras": 39.57,
+  "incomplete_fixture": 42.71,
+  "standard_android_without_vehicle_service": 44.94
+}

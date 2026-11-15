@@ -1,0 +1,113 @@
+{
+  "verifiedDateKst": "2026-11-15",
+  "versionName": "0.1.0",
+  "applicationId": "io.recheck.app",
+  "apk": "../apk/ReCheck_같은증상다시확인_release.apk",
+  "apkSha256": "b4baaed30b5ea72b32fa236e5c859d9088478aaf05477347ee078da1f2ee6e46",
+  "apkSignature": {
+    "verified": true,
+    "scheme": "v2",
+    "certificateDn": "CN=ReCheck Prototype, O=ReCheck",
+    "certificateSha256": "84f559faf04ab7a23113d9a65043480848e9cf0042704ef9c2415bcfc3b51400"
+  },
+  "build": {
+    "os": "Windows 11 amd64",
+    "jdk": "Eclipse Temurin 21.0.7",
+    "gradle": "8.10.2",
+    "androidGradlePlugin": "8.7.3",
+    "compileSdk": 35,
+    "targetSdk": 34,
+    "minimumSdk": 28,
+    "buildTools": "35.0.0",
+    "vehicleSdk": "ai.pleos.playground:Vehicle:2.3.2",
+    "debugAndReleaseBuildSucceeded": true,
+    "wrapperVersionCommandSucceeded": true,
+    "unitTests": {
+      "class": "ObservationTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0
+    },
+    "cleanCopyConfigurationDryRunSucceeded": true,
+    "cleanCopyFullRebuildPerformed": false
+  },
+  "standardAndroidTest": {
+    "os": "Android 15",
+    "api": 35,
+    "resolution": "1600x900",
+    "pleosSystemImage": false,
+    "instrumentationTests": {
+      "class": "SessionPersistenceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0
+    },
+    "releaseApkDemoFlow": [
+      "Three DEMO observations created through the app UI",
+      "Saved records compared across three stages",
+      "Report reviewed and Android share chooser opened",
+      "App force-stopped, reopened without fixture seeding, and three saved records recovered",
+      "DEMO incomplete-observation fixture displayed",
+      "Vehicle-mode connection guidance displayed without vehicle services"
+    ],
+    "recording": "recheck-session-actual-apk.mp4",
+    "timeline": "timeline.json",
+    "screenshots": "screenshots.json"
+  },
+  "notVerified": [
+    "Physical vehicle compatibility and signals",
+    "Per-model capability coverage",
+    "Repair effectiveness or diagnostic correctness",
+    "Frequency of use, time savings or monetary savings",
+    "An actual vehicle communication fault; incomplete screen used a labeled DEMO fixture"
+  ],
+  "privacyCheck": {
+    "localUsernamesOrPathsFoundInApk": false,
+    "privateKeysOrSigningPasswordsIncluded": false,
+    "rawBuildLogsIncluded": false
+  },
+  "pleosEmulatorTest": {
+    "imageVersion": "2.1.0",
+    "api": 34,
+    "fullSystemResolution": "2560x1440",
+    "coldBootSucceeded": true,
+    "sameReleaseApkInstalledAndLaunched": true,
+    "vehicleModePermissionsAccepted": true,
+    "vehicleSdkReadConnectionSucceeded": true,
+    "parkAndStoppedGateConfirmed": true,
+    "signalOrigin": "Official emulator VirtualConsole; not a physical vehicle",
+    "sdkPath": "Window capability/current-value and update callbacks, not app DEMO fixtures",
+    "storedObservationPointCounts": [
+      7,
+      5,
+      7
+    ],
+    "threeStageComparisonSucceeded": true,
+    "drivingRestriction": {
+      "gear": "D",
+      "platformBlockedApp": true,
+      "afterReturningToPark": "Observation insufficient, 1 point",
+      "saved": false
+    },
+    "evidenceDirectory": "pleos",
+    "rawVideoIncluded": false,
+    "manualExecutionReview": true,
+    "forceStopAndReopen": {
+      "defaultMode": "DEMO with 0 demo records",
+      "vehicleModeSelectedAgain": true,
+      "restoredVehicleRecords": 3,
+      "restoredPointCounts": [
+        7,
+        5,
+        7
+      ]
+    },
+    "screenshots": [
+      "pleos-live-afterallow.png",
+      "pleos-sdk-compare3.png",
+      "pleos-drive-interrupted.png",
+      "pleos-return-park-interrupted.png",
+      "pleos-reopened-compare3.png"
+    ]
+  }
+}
